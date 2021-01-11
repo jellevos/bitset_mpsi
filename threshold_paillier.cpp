@@ -190,6 +190,16 @@ ZZ add_homomorphically(ZZ c1, ZZ c2, PublicKey& public_key) {
     return NTL::MulMod(c1, c2, public_key.n_squared);
 }
 
+ZZ sum_homomorphically(std::vector<ZZ> ciphertexts, PublicKey& public_key) {
+    ZZ result = NTL::MulMod(ciphertexts.at(0), ciphertexts.at(1), public_key.n_squared);
+
+    for (int i = 0; i < ciphertexts.size() - 2; ++i) {
+        result = NTL::MulMod(result, ciphertexts.at(i), public_key.n_squared);
+    }
+
+    return result;
+}
+
 ZZ subtract_homomorphically(ZZ c1, ZZ c2, PublicKey& public_key) {
     return add_homomorphically(c1, NTL::InvMod(c2, public_key.n_squared), public_key);
 }

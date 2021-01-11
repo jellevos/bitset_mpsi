@@ -9,10 +9,6 @@ BitSet::BitSet(std::vector<long> set, long domain_size): storage(domain_size) {
     for (long element : set) {
         storage.at(element) = true;
     }
-
-    for (bool boolean : storage) {
-        std::cout << boolean << std::endl;
-    }
 }
 
 
@@ -37,18 +33,17 @@ BitSet::BitSet(std::vector<long> set, long domain_size): storage(domain_size) {
 //}
 
 /// Inverts the Bloom filter in place so that all 0s become 1s and all 1s become 0s
-//void BloomFilter::invert() {
-//    for (long j = 0; j < this->m_bits; ++j) {
-//        this->storage.at(j) = !this->storage.at(j);
-//    }
-//}
+void BitSet::invert() {
+    for (long i = 0; i < this->storage.size(); ++i) {
+        this->storage.at(i) = !this->storage.at(i);
+    }
+}
 
 /// Returns the bit-by-bit ciphertexts of the encrypted Bloom filter
 // TODO: Consider not passing ciphertexts by reference
-//void BloomFilter::encrypt_all(std::vector<ZZ> &ciphertexts, PublicKey &public_key) {
-//    ciphertexts.reserve(this->storage.size());
-//    for (bool element : this->storage) {
-//        // TODO: Maybe cast storage to long
-//        ciphertexts.push_back(encrypt(ZZ(element), public_key));
-//    }
-//}
+void BitSet::encrypt_all(std::vector<ZZ> &ciphertexts, PublicKey &public_key) {
+    ciphertexts.reserve(this->storage.size());
+    for (bool element : this->storage) {
+        ciphertexts.push_back(encrypt(ZZ(element), public_key));
+    }
+}
