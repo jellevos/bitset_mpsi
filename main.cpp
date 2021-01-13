@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <future>
+#include <unistd.h>
 #include "psi_protocols.h"
 #include "benchmarking.h"
 // #include "NTL/BasicThreadPool.h"
@@ -73,44 +74,53 @@ std::vector<std::pair<long, ZZ>> compute_decryption_shares(std::vector<ZZ> ciphe
 }
 
 // TODO: Allow variable set sizes?
-int main() {
-    long domain_size = 10;
-    long threshold_l = 2;
+int main(int argc, char *argv[]) {
+    // Runs MPSI protocol a set number of times and reports the mean and std
+    // -n <set size> = 16
+    // -t <party count> = 5
+    // -l <threshold> = 3
+    // -d <domain size> = 256
+    // -r <repetitions> = 10
+    long set_size = 16;
+    long party_count = 5;
+    long threshold = 3;
+    long domain_size = 256;
+    long repetitions = 10;
+
+    int option;
+    while ((option = getopt(argc, argv, "n:t:l:d:r:")) != -1) { //get option from the getopt() method
+        switch (option) {
+            //For option i, r, l, print that these are options
+            case 'n':
+                set_size = std::stol(optarg);
+                break;
+            case 't':
+                party_count = std::stol(optarg);
+                break;
+            case 'l':
+                threshold = std::stol(optarg);
+                break;
+            case 'd':
+                domain_size = std::stol(optarg);
+                break;
+            case 'r':
+                repetitions = std::stol(optarg);
+                break;
+            case '?': //used for some unknown options
+                printf("unknown option: %c\n", optopt);
+                break;
+        }
+    }
+
+//    long domain_size = 10;
+//    long threshold_l = 2;
+//
+//    std::vector<std::vector<long>> client_sets = {{1, 3, 5, 7}, {1, 4, 8, 5}};
+//    std::vector<long> leader_set = {5, 1, 2, 4};
 
     /// Setup
     Keys keys;
     key_gen(&keys, 1024, threshold_l, 3);
-
-    /// Step 1
-    std::vector<std::vector<long>> client_sets = {{1, 3, 5, 7}, {1, 4, 8, 5}};
-    std::vector<long> leader_set = {5, 1, 2, 4};
-//    std::vector<BitSet> client_bitsets = {BitSet({1, 3, 5, 7}, domain_size), BitSet({1, 4, 8, 5}, domain_size)};
-//    std::vector<long> leader_set = {5, 1, 2, 4};
-//    BitSet leader_bitset(leader_set, domain_size);
-//
-//    for (BitSet &client_bitset : client_bitsets) {
-//        client_bitset.invert();
-//    }
-//    leader_bitset.invert();
-//
-//    /// Step 2
-//    std::vector<std::vector<ZZ>> element_ciphertexts;
-//    element_ciphertexts.reserve(domain_size);
-//    for (int i = 0; i < domain_size; ++i) {
-//        element_ciphertexts.emplace_back();
-//    }
-//
-//    for (BitSet client_set : client_bitsets) {
-//        std::vector<ZZ> ciphertexts;
-//        client_set.encrypt_all(ciphertexts, keys.public_key);
-//
-//        for (int i = 0; i < ciphertexts.size(); ++i) {
-//            element_ciphertexts.at(i).push_back(ciphertexts.at(i));
-//        }
-//    }
-//
-//    std::vector<ZZ> leader_ciphertext;
-//    leader_bitset.encrypt_all(leader_ciphertext, keys.public_key);
 
     /// 1-2. Clients compute their bitset, invert it and encrypt it
     std::vector<std::future<std::vector<ZZ>>> ciphertexts_futures;

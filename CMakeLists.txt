@@ -18,9 +18,9 @@ add_library(SubProtocols sub_protocols.h sub_protocols.cpp)
 add_library(Benchmarking benchmarking.h benchmarking.cpp)
 
 # Bundle everything together
-add_executable(multiparty_psi_fresh main.cpp)
-target_include_directories(multiparty_psi_fresh PUBLIC ${NTL_INCLUDE_DIR} ${GMP_INCLUDE_DIR})
-target_link_libraries(multiparty_psi_fresh
+add_executable(bitset_mpsi main.cpp)
+target_include_directories(bitset_mpsi PUBLIC ${NTL_INCLUDE_DIR} ${GMP_INCLUDE_DIR})
+target_link_libraries(bitset_mpsi
         Benchmarking
         PSIProtocols
         SubProtocols
