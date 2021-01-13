@@ -15,13 +15,13 @@ add_library(ThresholdPaillier threshold_paillier.h threshold_paillier.cpp)
 add_library(BloomFilter bloom_filter.h bloom_filter.cpp)
 add_library(PSIProtocols psi_protocols.h psi_protocols.cpp)
 add_library(SubProtocols sub_protocols.h sub_protocols.cpp)
-add_library(Benchmarking benchmarking.h benchmarking.cpp)
+#add_library(Benchmarking benchmarking.h benchmarking.cpp)
 
 # Bundle everything together
 add_executable(bitset_mpsi main.cpp)
 target_include_directories(bitset_mpsi PUBLIC ${NTL_INCLUDE_DIR} ${GMP_INCLUDE_DIR})
 target_link_libraries(bitset_mpsi
-        Benchmarking
+#        Benchmarking
         PSIProtocols
         SubProtocols
         BloomFilter
