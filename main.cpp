@@ -10,7 +10,7 @@
 
 
 std::vector<long> sample_set(long set_size, long domain_size) {
-    std::default_random_engine generator;
+    std::default_random_engine generator(rand());
     std::uniform_int_distribution<long> distribution(0, domain_size);
 
     std::vector<long> set;
@@ -89,7 +89,10 @@ int main(int argc, char *argv[]) {
     key_gen(&keys, 1024, threshold, party_count);
 
     /// Execute protocol
+    // TODO: Repeating
+    // TODO: Timing
     multiparty_psi(client_sets, leader_set, domain_size, threshold, keys);
 
+    // TODO: Mean and std
     return 0;
 }
