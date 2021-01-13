@@ -35,6 +35,29 @@ std::vector<long> sample_set(long set_size, long domain_size) {
     return set;
 }
 
+double sample_mean(const std::vector<long>& measurements) {
+    // Computes the sample mean
+    double sum = 0;
+
+    for (long measurement : measurements) {
+        sum += measurement;
+    }
+
+    return sum / measurements.size();
+}
+
+
+double sample_std(const std::vector<long>& measurements, double mean) {
+    // Computes the corrected sample standard deviation
+    double sum = 0;
+
+    for (long measurement : measurements) {
+        sum += pow(measurement - mean, 2);
+    }
+
+    return sqrt(sum / (measurements.size() - 1.0));
+}
+
 // TODO: Allow variable set sizes?
 int main(int argc, char *argv[]) {
     // Runs MPSI protocol a set number of times and reports the mean and std
@@ -89,10 +112,21 @@ int main(int argc, char *argv[]) {
     key_gen(&keys, 1024, threshold, party_count);
 
     /// Execute protocol
-    // TODO: Repeating
-    // TODO: Timing
-    multiparty_psi(client_sets, leader_set, domain_size, threshold, keys);
+    std::vector<long> times;
+    for (int i = 0; i < repetitions; ++i) {
+        auto start = std::chrono::high_resolution_clock::now();
 
-    // TODO: Mean and std
+        multiparty_psi(client_sets, leader_set, domain_size, threshold, keys);
+
+        auto stop = std::chrono::high_resolution_clock::now();
+        times.push_back((stop-start).count());
+    }
+
+    double mean = sample_mean(times);
+    double std = sample_std(times, mean);
+
+    std::cout << mean << std::endl;
+    std::cout << std << std::endl;
+
     return 0;
 }
