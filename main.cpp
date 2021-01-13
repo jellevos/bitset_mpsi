@@ -11,7 +11,7 @@
 
 std::vector<long> sample_set(long set_size, long domain_size) {
     std::default_random_engine generator(rand());
-    std::uniform_int_distribution<long> distribution(0, domain_size);
+    std::uniform_int_distribution<long> distribution(0, domain_size-1);
 
     std::vector<long> set;
     set.reserve(set_size);
