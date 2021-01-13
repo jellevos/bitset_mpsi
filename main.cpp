@@ -20,6 +20,34 @@ void await_futures(std::vector<std::future<T>> &futures) {
     }
 }
 
+std::vector<ZZ> generate_ciphertexts(std::vector<long> &client_set, long domain_size, Keys &keys) {
+//    BloomFilter bloom_filter(m_bits, k_hashes);
+//
+//    // Step 1
+//    for (long element : client_set) {
+//        bloom_filter.insert(element);
+//    }
+//
+//    // Step 2
+//    bloom_filter.invert();
+//
+//    // Step 3
+//    std::vector<ZZ> eibf;
+//    bloom_filter.encrypt_all(eibf, keys.public_key);
+//
+//    return eibf;
+
+    /// Step 1
+    BitSet client_bitset(client_set, domain_size);
+    client_bitset.invert();
+
+    /// Step 2
+    std::vector<ZZ> ciphertexts;
+    client_bitset.encrypt_all(ciphertexts, keys.public_key);
+
+    return ciphertexts;
+}
+
 std::vector<ZZ> randomize_ciphertexts(std::vector<ZZ> ciphertexts, Keys &keys) {
     std::vector<ZZ> randomized_ciphertexts;
     randomized_ciphertexts.reserve(ciphertexts.size());
@@ -54,33 +82,54 @@ int main() {
     key_gen(&keys, 1024, threshold_l, 3);
 
     /// Step 1
-    std::vector<BitSet> client_bitsets = {BitSet({1, 3, 5, 7}, domain_size), BitSet({1, 4, 8, 5}, domain_size)};
+    std::vector<std::vector<long>> client_sets = {{1, 3, 5, 7}, {1, 4, 8, 5}};
     std::vector<long> leader_set = {5, 1, 2, 4};
-    BitSet leader_bitset(leader_set, domain_size);
+//    std::vector<BitSet> client_bitsets = {BitSet({1, 3, 5, 7}, domain_size), BitSet({1, 4, 8, 5}, domain_size)};
+//    std::vector<long> leader_set = {5, 1, 2, 4};
+//    BitSet leader_bitset(leader_set, domain_size);
+//
+//    for (BitSet &client_bitset : client_bitsets) {
+//        client_bitset.invert();
+//    }
+//    leader_bitset.invert();
+//
+//    /// Step 2
+//    std::vector<std::vector<ZZ>> element_ciphertexts;
+//    element_ciphertexts.reserve(domain_size);
+//    for (int i = 0; i < domain_size; ++i) {
+//        element_ciphertexts.emplace_back();
+//    }
+//
+//    for (BitSet client_set : client_bitsets) {
+//        std::vector<ZZ> ciphertexts;
+//        client_set.encrypt_all(ciphertexts, keys.public_key);
+//
+//        for (int i = 0; i < ciphertexts.size(); ++i) {
+//            element_ciphertexts.at(i).push_back(ciphertexts.at(i));
+//        }
+//    }
+//
+//    std::vector<ZZ> leader_ciphertext;
+//    leader_bitset.encrypt_all(leader_ciphertext, keys.public_key);
 
-    for (BitSet &client_bitset : client_bitsets) {
-        client_bitset.invert();
+    /// 1-2. Clients compute their bitset, invert it and encrypt it
+    std::vector<std::future<std::vector<ZZ>>> ciphertexts_futures;
+    ciphertexts_futures.reserve(client_sets.size());
+    for (auto & client_set : client_sets) {
+        ciphertexts_futures.push_back(
+                std::async(std::launch::async, generate_ciphertexts, std::ref(client_set), domain_size,
+                           std::ref(keys)));
     }
-    leader_bitset.invert();
 
-    /// Step 2
-    std::vector<std::vector<ZZ>> element_ciphertexts;
-    element_ciphertexts.reserve(domain_size);
-    for (int i = 0; i < domain_size; ++i) {
-        element_ciphertexts.emplace_back();
+    // Wait till the processing is done
+    await_futures(ciphertexts_futures);
+
+    // Extract the generated EIBFs from the clients
+    std::vector<std::vector<ZZ>> client_ciphertexts;
+    client_ciphertexts.reserve(client_sets.size());
+    for (std::future<std::vector<ZZ>> &future : ciphertexts_futures) {
+        client_ciphertexts.push_back(future.get());
     }
-
-    for (BitSet client_set : client_bitsets) {
-        std::vector<ZZ> ciphertexts;
-        client_set.encrypt_all(ciphertexts, keys.public_key);
-
-        for (int i = 0; i < ciphertexts.size(); ++i) {
-            element_ciphertexts.at(i).push_back(ciphertexts.at(i));
-        }
-    }
-
-    std::vector<ZZ> leader_ciphertext;
-    leader_bitset.encrypt_all(leader_ciphertext, keys.public_key);
 
     /// Step 3
     // Clients send their ciphertexts to the server
@@ -88,10 +137,16 @@ int main() {
     /// Step 4
     std::vector<ZZ> aggregated;
     aggregated.reserve(leader_set.size());
+    // Instantiate with the first client's elements
     for (long element : leader_set) {
-        ZZ sum = sum_homomorphically(element_ciphertexts.at(element), keys.public_key);
-        sum = add_homomorphically(sum, leader_ciphertext.at(element), keys.public_key);
-        aggregated.push_back(sum);
+        aggregated.push_back(client_ciphertexts.at(0).at(element));
+    }
+    // Add other clients' elements
+    for (int i = 0; i < leader_set.size(); ++i) {
+        for (int j = 1; j < client_ciphertexts.size(); ++j) {
+            aggregated.at(i) = add_homomorphically(aggregated.at(i), client_ciphertexts.at(j).at(leader_set.at(i)),
+                                                   keys.public_key);
+        }
         // TODO: Randomize?
     }
 
@@ -100,8 +155,8 @@ int main() {
 
     /// Step 6
     std::vector<std::future<std::vector<ZZ>>> randomization_futures;
-    randomization_futures.reserve(client_bitsets.size());
-    for (int i = 0; i < client_bitsets.size(); ++i) {
+    randomization_futures.reserve(client_sets.size());
+    for (int i = 0; i < client_sets.size(); ++i) {
         randomization_futures.push_back(std::async(std::launch::async, randomize_ciphertexts, aggregated, std::ref(keys)));
     }
 
@@ -109,17 +164,17 @@ int main() {
     await_futures(randomization_futures);
 
     // Extract the randomized ciphertexts from the clients
-    std::vector<std::vector<ZZ>> client_ciphertexts;
-    client_ciphertexts.reserve(client_bitsets.size());
+    std::vector<std::vector<ZZ>> client_randomizations;
+    client_randomizations.reserve(client_sets.size());
     for (std::future<std::vector<ZZ>> &future : randomization_futures) {
-        client_ciphertexts.push_back(future.get());
+        client_randomizations.push_back(future.get());
     }
 
     // Sum up all clients' randomized ciphertexts
-    std::vector<ZZ> randomized_ciphertexts = client_ciphertexts.at(0);
-    for (int i = 1; i < client_ciphertexts.size(); ++i) {
+    std::vector<ZZ> randomized_ciphertexts = client_randomizations.at(0);
+    for (int i = 1; i < client_randomizations.size(); ++i) {
         for (int j = 0; j < aggregated.size(); ++j) {
-            randomized_ciphertexts.at(j) = add_homomorphically(randomized_ciphertexts.at(j), client_ciphertexts.at(i).at(j), keys.public_key);
+            randomized_ciphertexts.at(j) = add_homomorphically(randomized_ciphertexts.at(j), client_randomizations.at(i).at(j), keys.public_key);
         }
     }
 
