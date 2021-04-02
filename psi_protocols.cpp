@@ -1,5 +1,5 @@
 //
-// Created by jelle on 09-10-20.
+// Created by Jelle Vos on 09-10-20.
 //
 #include <thread>
 #include <future>
@@ -57,8 +57,6 @@ std::vector<std::pair<long, ZZ>> compute_decryption_shares(std::vector<ZZ> ciphe
 }
 
 
-// TODO: Clean up
-// TODO: Fix all file headers
 std::vector<long> multiparty_psi(std::vector<std::vector<long>> client_sets,
                                  std::vector<long> leader_set, long domain_size, long threshold_l, Keys &keys) {
     /// Step 1-2. Clients compute their bitset, invert it and encrypt it
@@ -96,7 +94,6 @@ std::vector<long> multiparty_psi(std::vector<std::vector<long>> client_sets,
             aggregated.at(i) = add_homomorphically(aggregated.at(i), client_ciphertexts.at(j).at(leader_set.at(i)),
                                                    keys.public_key);
         }
-        // TODO: Randomize?
     }
 
     /// Step 5

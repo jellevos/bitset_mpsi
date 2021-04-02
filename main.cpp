@@ -1,3 +1,6 @@
+//
+// Created by Jelle Vos on 02-04-21.
+//
 #include <iostream>
 #include <vector>
 #include <future>
@@ -55,7 +58,6 @@ double sample_std(const std::vector<long>& measurements, double mean) {
     return sqrt(sum / (measurements.size() - 1.0));
 }
 
-// TODO: Allow variable set sizes?
 int main(int argc, char *argv[]) {
     // Runs MPSI protocol a set number of times and reports the mean and std
     // -n <set size> = 16
